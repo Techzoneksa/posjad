@@ -1,0 +1,128 @@
+name: Deploy JAAD CLOUD to Hostinger
+
+on:
+  push:
+    branches:
+      - master
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 22.x
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22.x"
+
+      - name: Install Frontend Dependencies & Build
+        env:
+          NEXT_TELEMETRY_DISABLED: "1"
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY }}
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: |
+          if [ -f package-lock.json ]; then
+            npm ci
+          else
+            npm install --no-audit --no-fund
+          fi
+          npm run build
+        # Next.js standalone output will be generated in .next/standalone
+
+      - name: Install Backend Dependencies
+        run: |
+          cd server
+          if [ -f package-lock.json ]; then
+            npm ci
+          else
+            npm install --no-audit --no-fund
+          fi
+
+      - name: Prepare Standalone Static Assets
+        run: |
+          # Next.js standalone requires public and .next/static folders to be moved inside it.
+          mkdir -p .next/standalone/public
+          mkdir -p .next/standalone/.next/static
+          cp -r public/* .next/standalone/public/ || true
+          cp -r .next/static/* .next/standalone/.next/static/ || true
+
+      - name: Sync Files to Hostinger VPS via rsync
+        uses: easingthemes/ssh-deploy@main
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.SSH_KEY }}
+          ARGS: >-
+            -avz --delete
+            --exclude='.git'
+            --exclude='.github'
+            --exclude='node_modules'
+            --exclude='.env'
+            --exclude='.env.production'
+            --exclude='server/.env'
+            --exclude='.next/cache'
+            --exclude='zatca-signing-service/libs'
+          SOURCE: "./"
+          REMOTE_HOST: ${{ secrets.HOST }}
+          REMOTE_USER: ${{ secrets.USERNAME }}
+          REMOTE_PORT: ${{ secrets.PORT }}
+          TARGET: "/var/www/posjad"
+
+      - name: Execute Post-Deploy Script on Hostinger
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.HOST }}
+          username: ${{ secrets.USERNAME }}
+          key: ${{ secrets.SSH_KEY }}
+          port: ${{ secrets.PORT }}
+          script: |
+            set -euo pipefail
+
+            APP_DIR="/var/www/posjad"
+            cd "$APP_DIR"
+
+            if [ ! -f "$APP_DIR/.env.production" ]; then
+              echo "WARNING: $APP_DIR/.env.production is missing. PM2 will rely on process manager environment."
+            fi
+            if [ ! -f "$APP_DIR/server/.env" ]; then
+              echo "WARNING: $APP_DIR/server/.env is missing. Backend requires production secrets."
+            fi
+
+            # Install production dependencies for standalone frontend when a package manifest exists.
+            if [ -f "$APP_DIR/.next/standalone/package.json" ]; then
+              cd "$APP_DIR/.next/standalone"
+              npm install --omit=dev --no-audit --no-fund
+            fi
+
+            # Ensure backend dependencies exist.
+            cd "$APP_DIR/server"
+            if [ -f package-lock.json ]; then
+              npm ci --omit=dev
+            else
+              npm install --omit=dev --no-audit --no-fund
+            fi
+
+            cd "$APP_DIR"
+            # Restart PM2 processes.
+            pm2 reload ecosystem.config.js --env production --update-env || pm2 start ecosystem.config.js --env production
+            pm2 save
+
+            # Rebuild and restart Java ZATCA Signing Service Docker container.
+            cd "$APP_DIR/zatca-signing-service"
+            ZATCA_SDK_VERSION="${ZATCA_SDK_VERSION:-4.0.0}"
+            SDK_JAR="libs/sdk-${ZATCA_SDK_VERSION}-jar-with-dependencies.jar"
+            if [ -f "$SDK_JAR" ]; then
+              docker build --build-arg ZATCA_SDK_VERSION="$ZATCA_SDK_VERSION" -t jaad-zatca-signing:latest .
+              docker rm -f jaad-zatca-signing || true
+              docker run -d \
+                --name jaad-zatca-signing \
+                --restart unless-stopped \
+                --env-file "$APP_DIR/server/.env" \
+                -p 127.0.0.1:8081:8080 \
+                jaad-zatca-signing:latest
+            else
+              echo "WARNING: $SDK_JAR not found. Skipping ZATCA signing service rebuild."
+            fi

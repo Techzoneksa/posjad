@@ -1,0 +1,1 @@
+ALTER TYPE public.zatca_invoice_status ADD VALUE IF NOT EXISTS 'validated_blocked';

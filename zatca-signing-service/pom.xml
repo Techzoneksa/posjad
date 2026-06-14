@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <groupId>com.yellowchicken</groupId>
+    <artifactId>zatca-signing-service</artifactId>
+    <version>0.1.16</version>
+    <packaging>jar</packaging>
+
+    <properties>
+        <maven.compiler.source>21</maven.compiler.source>
+        <maven.compiler.target>21</maven.compiler.target>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+
+        <!--
+            Official ZATCA SDK fat-jar from the Fatoora portal.
+            Place at: libs/sdk-${zatca.sdk.version}-jar-with-dependencies.jar
+            NOT on Maven Central. Loaded onto the classpath at runtime by the
+            Dockerfile via -cp, so it is declared with <scope>system</scope>
+            here (compile-only, not bundled into our shaded jar).
+
+            Default tracks the newer SDK shipped on the Fatoora portal.
+            Override at build time with:
+                mvn -Dzatca.sdk.version=3.x.x package
+            or via the Dockerfile build-arg ZATCA_SDK_VERSION.
+        -->
+        <zatca.sdk.version>4.0.0</zatca.sdk.version>
+        <zatca.sdk.jar>${project.basedir}/libs/sdk-${zatca.sdk.version}-jar-with-dependencies.jar</zatca.sdk.jar>
+    </properties>
+
+    <dependencies>
+        <!-- Minimal JSON parsing. Bundled into the shaded jar. -->
+        <dependency>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-databind</artifactId>
+            <version>2.17.2</version>
+        </dependency>
+
+        <!--
+            ZATCA Official SDK (local fat-jar). 'system' scope keeps it on the
+            compile classpath without trying to resolve it from a repo. At
+            runtime the Dockerfile puts it on the classpath explicitly.
+        -->
+        <dependency>
+            <groupId>sa.gov.zatca</groupId>
+            <artifactId>zatca-einvoicing-sdk</artifactId>
+            <version>${zatca.sdk.version}</version>
+            <scope>system</scope>
+            <systemPath>${zatca.sdk.jar}</systemPath>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <finalName>zatca-signing-service-${project.version}</finalName>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-shade-plugin</artifactId>
+                <version>3.5.3</version>
+                <executions>
+                    <execution>
+                        <phase>package</phase>
+                        <goals><goal>shade</goal></goals>
+                        <configuration>
+                            <createDependencyReducedPom>false</createDependencyReducedPom>
+                            <transformers>
+                                <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
+                                    <mainClass>com.yellowchicken.zatca.SigningServiceApplication</mainClass>
+                                </transformer>
+                            </transformers>
+                            <filters>
+                                <filter>
+                                    <artifact>*:*</artifact>
+                                    <excludes>
+                                        <exclude>META-INF/*.SF</exclude>
+                                        <exclude>META-INF/*.DSA</exclude>
+                                        <exclude>META-INF/*.RSA</exclude>
+                                    </excludes>
+                                </filter>
+                            </filters>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
+</project>

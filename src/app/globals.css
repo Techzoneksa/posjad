@@ -1,0 +1,165 @@
+@import "tailwindcss" source(none);
+@source "..";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+  --font-sans: "Inter", "IBM Plex Sans Arabic", "Tajawal", system-ui, sans-serif;
+  --font-arabic: "IBM Plex Sans Arabic", "Tajawal", "Inter", sans-serif;
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --radius-2xl: calc(var(--radius) + 8px);
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-success: var(--success);
+  --color-success-foreground: var(--success-foreground);
+  --color-warning: var(--warning);
+  --color-warning-foreground: var(--warning-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+}
+
+:root {
+  --radius: 0.875rem;
+  /* JAAD — Turquoise, Cream, Beige, Dark Gray palette */
+  --background: #FAF8F5;
+  --foreground: #2D2D2D;
+  --card: #FFFFFF;
+  --card-foreground: #2D2D2D;
+  --popover: #FFFFFF;
+  --popover-foreground: #2D2D2D;
+
+  /* Primary = deep turquoise (CTAs) */
+  --primary: #1B9A8A;
+  --primary-foreground: #FFFFFF;
+  --secondary: #E8DFD0;
+  --secondary-foreground: #2D2D2D;
+  --muted: #E5E7EB;
+  --muted-foreground: #6B7280;
+  /* Accent = bright turquoise */
+  --accent: #3DD9C4;
+  --accent-foreground: #2D2D2D;
+  --destructive: #EF4444;
+  --destructive-foreground: #FFFFFF;
+  --success: #10B981;
+  --success-foreground: #FFFFFF;
+  --warning: #D4A017;
+  --warning-foreground: #2D2D2D;
+  /* Order statuses */
+  --status-new: #D4A017;
+  --status-prep: #B8860B;
+  --status-ready: #10B981;
+  --status-cancelled: #EF4444;
+  --border: #D1D5DB;
+  --input: #D1D5DB;
+  --ring: #1B9A8A;
+  --sidebar: #2D2D2D;
+  --sidebar-foreground: #FAF8F5;
+  --sidebar-primary: #1B9A8A;
+  --sidebar-primary-foreground: #FFFFFF;
+  --sidebar-accent: #4B5563;
+  --sidebar-accent-foreground: #FAF8F5;
+  --sidebar-border: #4B5563;
+  --sidebar-ring: #1B9A8A;
+}
+
+.dark {
+  /* Dark mode — Deep charcoal with turquoise accents */
+  --background: #1A1A1A;
+  --foreground: #FAF8F5;
+  --card: #262626;
+  --card-foreground: #FAF8F5;
+  --popover: #262626;
+  --popover-foreground: #FAF8F5;
+  --primary: #3DD9C4;
+  --primary-foreground: #1A1A1A;
+  --secondary: #333333;
+  --secondary-foreground: #FAF8F5;
+  --muted: #333333;
+  --muted-foreground: #A0A0A0;
+  --accent: #3DD9C4;
+  --accent-foreground: #1A1A1A;
+  --destructive: #E0635A;
+  --destructive-foreground: #1A1A1A;
+  --success: #7BB16A;
+  --success-foreground: #1A1A1A;
+  --warning: #D4A017;
+  --warning-foreground: #1A1A1A;
+  --status-new: #D4A017;
+  --status-prep: #B8860B;
+  --status-ready: #7BB16A;
+  --status-cancelled: #E0635A;
+  --border: #404040;
+  --input: #404040;
+  --ring: #3DD9C4;
+  --sidebar: #262626;
+  --sidebar-foreground: #FAF8F5;
+  --sidebar-primary: #3DD9C4;
+  --sidebar-primary-foreground: #1A1A1A;
+  --sidebar-accent: #404040;
+  --sidebar-accent-foreground: #FAF8F5;
+  --sidebar-border: #404040;
+  --sidebar-ring: #3DD9C4;
+}
+
+@layer base {
+  * {
+    border-color: var(--color-border);
+  }
+  html, body {
+    background-color: var(--color-background);
+    color: var(--color-foreground);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+  }
+  html[dir="rtl"] body {
+    font-family: var(--font-arabic);
+  }
+}
+
+@layer utilities {
+  .card-soft {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    box-shadow: 0 1px 2px oklch(0.2 0.02 260 / 0.04), 0 8px 24px -16px oklch(0.2 0.02 260 / 0.08);
+  }
+  .scrollbar-thin::-webkit-scrollbar { width: 8px; height: 8px; }
+  .scrollbar-thin::-webkit-scrollbar-thumb { background: var(--border); border-radius: 999px; }
+  /* Thermal receipt look */
+  .receipt {
+    font-family: ui-monospace, "SFMono-Regular", Menlo, monospace;
+    background: white;
+    color: #111;
+  }
+  @media print {
+    .no-print { display: none !important; }
+    .print-area { box-shadow: none !important; }
+  }
+}

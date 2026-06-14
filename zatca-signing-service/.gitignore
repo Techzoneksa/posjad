@@ -1,0 +1,6 @@
+target/
+.idea/
+*.iml
+.DS_Store
+# Do NOT commit the ZATCA SDK jar to public repos — it is licensed.
+libs/*.jar

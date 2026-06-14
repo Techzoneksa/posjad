@@ -1,0 +1,21 @@
+﻿import { createApiAction } from "@/lib/api-client";
+
+export const getZatcaSettings = createApiAction("getZatcaSettings", "POST");
+export const getZatcaConnectionStatus = createApiAction("getZatcaConnectionStatus", "POST");
+export const updateZatcaSettings = createApiAction("updateZatcaSettings", "POST");
+export const verifyOnboardingReadiness = createApiAction("verifyOnboardingReadiness", "POST");
+export const prepareDeviceCsr = createApiAction("prepareDeviceCsr", "POST");
+export const submitOnboardingOtp = createApiAction("submitOnboardingOtp", "POST");
+export const processZatcaQueue = createApiAction("processZatcaQueue", "POST");
+export const submitValidatedZatcaInvoice = createApiAction("submitValidatedZatcaInvoice", "POST");
+export const getDeviceStatus = createApiAction("getDeviceStatus", "POST");
+export const getCsidDetails = createApiAction("getCsidDetails", "POST");
+export const debugSignedPropertiesSample = createApiAction("debugSignedPropertiesSample", "POST");
+export const regenerateZatcaInvoice = createApiAction("regenerateZatcaInvoice", "POST");
+export const localGenerateZatcaInvoice = createApiAction("localGenerateZatcaInvoice", "POST");
+export const retryZatcaInvoice = createApiAction("retryZatcaInvoice", "POST");
+export const listZatcaInvoices = createApiAction("listZatcaInvoices", "POST");
+export const listZatcaCreditNotes = createApiAction("listZatcaCreditNotes", "POST");
+export const listZatcaLogs = createApiAction("listZatcaLogs", "POST");
+export const getZatcaForInvoice = createApiAction("getZatcaForInvoice", "POST");
+export const getZatcaLifecycleSummary = createApiAction("getZatcaLifecycleSummary", "POST");

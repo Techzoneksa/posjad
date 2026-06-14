@@ -1,0 +1,22 @@
+﻿import { createApiAction } from "@/lib/api-client";
+
+export const listSuppliers = createApiAction("listSuppliers", "GET");
+export const upsertSupplier = createApiAction("upsertSupplier", "POST");
+export const setSupplierActive = createApiAction("setSupplierActive", "POST");
+export const getSupplierProfile = createApiAction("getSupplierProfile", "POST");
+export const listInventory = createApiAction("listInventory", "GET");
+export const upsertInventoryItem = createApiAction("upsertInventoryItem", "POST");
+export const setInventoryActive = createApiAction("setInventoryActive", "POST");
+export const listItemMovements = createApiAction("listItemMovements", "POST");
+export const listPurchases = createApiAction("listPurchases", "GET");
+export const getPurchase = createApiAction("getPurchase", "POST");
+export const createPurchase = createApiAction("createPurchase", "POST");
+export const listRecipes = createApiAction("listRecipes", "GET");
+export const saveRecipe = createApiAction("saveRecipe", "POST");
+export const deleteRecipe = createApiAction("deleteRecipe", "POST");
+export const createAdjustment = createApiAction("createAdjustment", "POST");
+export const listAdjustments = createApiAction("listAdjustments", "GET");
+export const createWaste = createApiAction("createWaste", "POST");
+export const listWaste = createApiAction("listWaste", "GET");
+export const listCustomersWithStats = createApiAction("listCustomersWithStats", "GET");
+export const getCustomerHistory = createApiAction("getCustomerHistory", "POST");
