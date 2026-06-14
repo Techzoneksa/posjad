@@ -35,7 +35,7 @@ export function ModifierDialog({ product, onClose }: { product: Product | null; 
     const init: SelMap = {};
     for (const g of groups) {
       if (g.required && g.min_select >= 1 && addonsByGroup[g.id]?.[0]) {
-        init[g.id] = [addonsByGroup[g.id][0].id];
+        init[g.id] = [addonsByGroup[g.id]?.[0]?.id ?? ""];
       } else init[g.id] = [];
     }
     setSel(init); setQty(1); setNote("");
