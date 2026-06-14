@@ -18,13 +18,37 @@ jobs:
         with:
           node-version: "22.x"
 
-      - name: Install Frontend Dependencies & Build
+      - name: Resolve Supabase Build Environment
         env:
-          NEXT_TELEMETRY_DISABLED: "1"
           NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
           NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY }}
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_PUBLISHABLE_KEY: ${{ secrets.SUPABASE_PUBLISHABLE_KEY }}
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.VITE_SUPABASE_PUBLISHABLE_KEY }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: |
+          SUPABASE_PUBLIC_URL="${NEXT_PUBLIC_SUPABASE_URL:-${SUPABASE_URL:-${VITE_SUPABASE_URL:-}}}"
+          SUPABASE_PUBLIC_KEY="${NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY:-${SUPABASE_PUBLISHABLE_KEY:-${SUPABASE_ANON_KEY:-${VITE_SUPABASE_PUBLISHABLE_KEY:-}}}}"
+
+          if [ -z "$SUPABASE_PUBLIC_URL" ] || [ -z "$SUPABASE_PUBLIC_KEY" ]; then
+            echo "Missing Supabase public build environment. Configure NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY, or legacy SUPABASE_URL plus SUPABASE_PUBLISHABLE_KEY/SUPABASE_ANON_KEY."
+            exit 1
+          fi
+
+          echo "::add-mask::$SUPABASE_PUBLIC_KEY"
+          echo "NEXT_PUBLIC_SUPABASE_URL=$SUPABASE_PUBLIC_URL" >> "$GITHUB_ENV"
+          echo "NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=$SUPABASE_PUBLIC_KEY" >> "$GITHUB_ENV"
+          echo "SUPABASE_URL=${SUPABASE_URL:-$SUPABASE_PUBLIC_URL}" >> "$GITHUB_ENV"
+          if [ -n "${SUPABASE_SERVICE_ROLE_KEY:-}" ]; then
+            echo "::add-mask::$SUPABASE_SERVICE_ROLE_KEY"
+            echo "SUPABASE_SERVICE_ROLE_KEY=$SUPABASE_SERVICE_ROLE_KEY" >> "$GITHUB_ENV"
+          fi
+
+      - name: Install Frontend Dependencies & Build
+        env:
+          NEXT_TELEMETRY_DISABLED: "1"
         run: |
           if [ -f package-lock.json ]; then
             npm ci
