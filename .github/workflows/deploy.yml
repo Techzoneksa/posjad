@@ -130,8 +130,10 @@ jobs:
             fi
 
             cd "$APP_DIR"
-            # Restart PM2 processes.
-            pm2 reload ecosystem.config.js --env production --update-env || pm2 start ecosystem.config.js --env production
+            # Start from a clean PM2 state for this app so stale/duplicate Next.js
+            # processes do not keep binding the frontend port across deployments.
+            pm2 delete jaad-cloud-frontend jaad-cloud-api || true
+            pm2 start ecosystem.config.js --env production --update-env
             pm2 save
 
             # Rebuild and restart Java ZATCA Signing Service Docker container.
