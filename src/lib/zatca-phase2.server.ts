@@ -661,7 +661,7 @@ function ecdsaSignUtf8(
         bytes.unshift(Number(v & 0xffn));
         v >>= 8n;
       }
-    if (bytes[0] & 0x80) bytes.unshift(0);
+    if ((bytes[0] ?? 0) & 0x80) bytes.unshift(0);
     return new Uint8Array([0x02, bytes.length, ...bytes]);
   };
   const rd = derInt(r);
@@ -692,7 +692,7 @@ function ecdsaSignBytesSha256(
         bytes.unshift(Number(v & 0xffn));
         v >>= 8n;
       }
-    if (bytes[0] & 0x80) bytes.unshift(0);
+    if ((bytes[0] ?? 0) & 0x80) bytes.unshift(0);
     return new Uint8Array([0x02, bytes.length, ...bytes]);
   };
   const rd = derInt(r);
@@ -961,7 +961,7 @@ export interface Phase2ValidationReport {
 
 function extractFirst(re: RegExp, s: string): string | null {
   const m = s.match(re);
-  return m ? m[1] : null;
+  return m?.[1] ?? null;
 }
 
 function walkQrTlv(qrB64: string): { tags: Map<number, Buffer>; count: number } {
@@ -972,6 +972,7 @@ function walkQrTlv(qrB64: string): { tags: Map<number, Buffer>; count: number } 
   while (i + 2 <= buf.length) {
     const tag = buf[i];
     const len = buf[i + 1];
+    if (tag == null || len == null) break;
     if (i + 2 + len > buf.length) break;
     tags.set(tag, Buffer.from(buf.subarray(i + 2, i + 2 + len)));
     count++;

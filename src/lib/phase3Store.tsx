@@ -80,6 +80,7 @@ export function Phase3Provider({ children }: { children: ReactNode }) {
           const idx = next.findIndex(x => x.id === line.inventoryId);
           if (idx >= 0) {
             const it = next[idx];
+            if (!it) return;
             const newQty = it.qty + line.qty;
             const totalCost = it.qty * it.avgCost + line.qty * line.unitCost;
             const newAvg = newQty > 0 ? totalCost / newQty : it.avgCost;

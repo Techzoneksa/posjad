@@ -71,7 +71,12 @@ export function Phase6Provider({ children }: { children: ReactNode }) {
         setNotifs((p) => p.map((n) => n.id === id ? { ...n, status } : n)),
       perms,
       togglePerm: (role, mod, action) =>
-        setPerms((p) => ({ ...p, [role]: { ...p[role], [mod]: { ...p[role][mod], [action]: !p[role][mod][action] } } })),
+        setPerms((p) => {
+          const rolePerms = p[role] ?? DEFAULT_PERMISSIONS[role];
+          const modPerms = rolePerms?.[mod] ?? DEFAULT_PERMISSIONS[role]?.[mod];
+          if (!rolePerms || !modPerms) return p;
+          return { ...p, [role]: { ...rolePerms, [mod]: { ...modPerms, [action]: !modPerms[action] } } };
+        }),
       resetPerms: () => setPerms(DEFAULT_PERMISSIONS),
       qa,
       toggleQA: (sid, iid) =>

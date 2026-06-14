@@ -48,7 +48,7 @@ function derInteger(n: number) {
   const bytes: number[] = [];
   let v = n;
   while (v > 0) { bytes.unshift(v & 0xff); v >>= 8; }
-  if (bytes[0] & 0x80) bytes.unshift(0);
+  if ((bytes[0] ?? 0) & 0x80) bytes.unshift(0);
   return tlv(0x02, new Uint8Array(bytes));
 }
 function derOctetString(bytes: Uint8Array) { return tlv(0x04, bytes); }
@@ -60,10 +60,16 @@ function derBitString(bytes: Uint8Array) {
 }
 function derOid(oid: string): Uint8Array {
   const parts = oid.split(".").map((n) => parseInt(n, 10));
-  const first = 40 * parts[0] + parts[1];
+  const firstPart = parts[0];
+  const secondPart = parts[1];
+  if (parts.length < 2 || firstPart == null || secondPart == null || parts.some((n) => !Number.isFinite(n))) {
+    throw new Error(`Invalid OID: ${oid}`);
+  }
+  const first = 40 * firstPart + secondPart;
   const out: number[] = [first];
   for (let i = 2; i < parts.length; i++) {
     let v = parts[i];
+    if (v == null) throw new Error(`Invalid OID: ${oid}`);
     const stack: number[] = [v & 0x7f];
     v >>= 7;
     while (v > 0) { stack.unshift((v & 0x7f) | 0x80); v >>= 7; }

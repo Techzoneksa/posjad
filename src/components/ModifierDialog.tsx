@@ -57,7 +57,7 @@ export function ModifierDialog({ product, onClose }: { product: Product | null; 
   };
 
   const allSelectedAddons: BAddon[] = groups.flatMap(g =>
-    (sel[g.id] || []).map(id => addonsByGroup[g.id].find(a => a.id === id)!).filter(Boolean)
+    (sel[g.id] || []).map(id => addonsByGroup[g.id]?.find(a => a.id === id)).filter((a): a is BAddon => Boolean(a))
   );
 
   const isRemovalGroup = (g: BAddonGroup) => /إزالة|Removal/i.test(g.name_en + g.name_ar);
@@ -71,17 +71,17 @@ export function ModifierDialog({ product, onClose }: { product: Product | null; 
   const submit = () => {
     if (!canSubmit) return;
     const spice = groups.find(isSpiceGroup);
-    const spiceSel = spice ? addonsByGroup[spice.id].find(a => a.id === (sel[spice.id]?.[0])) : undefined;
+    const spiceSel = spice ? addonsByGroup[spice.id]?.find(a => a.id === (sel[spice.id]?.[0])) : undefined;
     const removals = groups.filter(isRemovalGroup).flatMap(g =>
-      (sel[g.id] || []).map(id => {
-        const a = addonsByGroup[g.id].find(x => x.id === id)!;
-        return { id: a.id, ar: a.name_ar, en: a.name_en };
+      (sel[g.id] || []).flatMap(id => {
+        const a = addonsByGroup[g.id]?.find(x => x.id === id);
+        return a ? [{ id: a.id, ar: a.name_ar, en: a.name_en }] : [];
       })
     );
     const addons = groups.filter(g => !isSpiceGroup(g) && !isRemovalGroup(g)).flatMap(g =>
-      (sel[g.id] || []).map(id => {
-        const a = addonsByGroup[g.id].find(x => x.id === id)!;
-        return { id: a.id, ar: a.name_ar, en: a.name_en, price: Number(a.price_delta) };
+      (sel[g.id] || []).flatMap(id => {
+        const a = addonsByGroup[g.id]?.find(x => x.id === id);
+        return a ? [{ id: a.id, ar: a.name_ar, en: a.name_en, price: Number(a.price_delta) }] : [];
       })
     );
     const item: Omit<CartItem, "uid"> = {

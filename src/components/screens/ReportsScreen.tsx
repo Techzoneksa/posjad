@@ -160,7 +160,7 @@ function FiltersBar({
             <SelectContent>
               <SelectItem value="__all__">{lang === "ar" ? "الكل" : "All"}</SelectItem>
               {["dine_in","takeaway","delivery_app"].map(t =>
-                <SelectItem key={t} value={t}>{lang === "ar" ? ORDER_TYPE_LABEL[t].ar : ORDER_TYPE_LABEL[t].en}</SelectItem>)}
+                <SelectItem key={t} value={t}>{ORDER_TYPE_LABEL[t]?.[lang === "ar" ? "ar" : "en"] ?? t}</SelectItem>)}
             </SelectContent>
           </Select>
         </div>
@@ -173,7 +173,7 @@ function FiltersBar({
             <SelectContent>
               <SelectItem value="__all__">{lang === "ar" ? "الكل" : "All"}</SelectItem>
               {["cash","mada","apple_pay","visa","mastercard","mixed"].map(m =>
-                <SelectItem key={m} value={m}>{lang === "ar" ? METHOD_LABEL[m].ar : METHOD_LABEL[m].en}</SelectItem>)}
+                <SelectItem key={m} value={m}>{METHOD_LABEL[m]?.[lang === "ar" ? "ar" : "en"] ?? m}</SelectItem>)}
             </SelectContent>
           </Select>
         </div>
@@ -204,7 +204,7 @@ function DailySalesTab({ cashiers }: { cashiers: { id: string; name: string }[] 
           </div>
           <div className="mt-3 grid grid-cols-2 gap-3 md:grid-cols-4 xl:grid-cols-7">
             {["cash","mada","apple_pay","visa","mastercard","mixed"].map(m => (
-              <SummaryCard key={m} label={lang === "ar" ? METHOD_LABEL[m].ar : METHOD_LABEL[m].en} value={fmtMoney(q.data!.summary.totals[m] ?? 0)} />
+              <SummaryCard key={m} label={METHOD_LABEL[m]?.[lang === "ar" ? "ar" : "en"] ?? m} value={fmtMoney(q.data!.summary.totals[m] ?? 0)} />
             ))}
           </div>
 
@@ -664,7 +664,7 @@ function RefundsTab({ cashiers }: { cashiers: { id: string; name: string }[] }) 
           <SelectTrigger className="h-9 w-44"><SelectValue /></SelectTrigger>
           <SelectContent>
             <SelectItem value="__all__">{lang === "ar" ? "الكل" : "All"}</SelectItem>
-            {["cash","mada","apple_pay","visa","mastercard","mixed"].map(m => <SelectItem key={m} value={m}>{lang === "ar" ? METHOD_LABEL[m].ar : METHOD_LABEL[m].en}</SelectItem>)}
+            {["cash","mada","apple_pay","visa","mastercard","mixed"].map(m => <SelectItem key={m} value={m}>{METHOD_LABEL[m]?.[lang === "ar" ? "ar" : "en"] ?? m}</SelectItem>)}
           </SelectContent>
         </Select>
       </div>

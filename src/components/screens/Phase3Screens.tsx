@@ -560,20 +560,22 @@ function PurchaseDialog({ onClose, onSaved }: { onClose: () => void; onSaved: ()
                   <div key={idx} className="grid grid-cols-12 gap-1 items-center">
                     <Select value={it.inventory_item_id} onValueChange={(v) => {
                       const next = [...items];
+                      const current = next[idx];
+                      if (!current) return;
                       const item = inventory.find((x) => x.id === v);
-                      next[idx] = { ...next[idx], inventory_item_id: v, unit: item?.unit || next[idx].unit, unit_cost: Number(item?.average_cost) || next[idx].unit_cost };
+                      next[idx] = { ...current, inventory_item_id: v, unit: item?.unit || current.unit, unit_cost: Number(item?.average_cost) || current.unit_cost };
                       setItems(next);
                     }}>
                       <SelectTrigger className="col-span-4 h-8 text-xs"><SelectValue /></SelectTrigger>
                       <SelectContent>{inventory.map((x) => <SelectItem key={x.id} value={x.id}>{x.name_ar}</SelectItem>)}</SelectContent>
                     </Select>
                     <Input type="number" className="col-span-2 h-8 text-xs" value={it.quantity}
-                      onChange={(e) => { const n = [...items]; n[idx].quantity = +e.target.value || 0; setItems(n); }} />
+                      onChange={(e) => { const n = [...items]; const current = n[idx]; if (!current) return; n[idx] = { ...current, quantity: +e.target.value || 0 }; setItems(n); }} />
                     <span className="col-span-1 text-center text-xs text-muted-foreground">{tr(UNITS, it.unit, lang)}</span>
                     <Input type="number" className="col-span-2 h-8 text-xs" value={it.unit_cost}
-                      onChange={(e) => { const n = [...items]; n[idx].unit_cost = +e.target.value || 0; setItems(n); }} placeholder={lang === "ar" ? "تكلفة" : "Cost"} />
+                      onChange={(e) => { const n = [...items]; const current = n[idx]; if (!current) return; n[idx] = { ...current, unit_cost: +e.target.value || 0 }; setItems(n); }} placeholder={lang === "ar" ? "تكلفة" : "Cost"} />
                     <Input type="number" className="col-span-2 h-8 text-xs" value={it.vat_amount}
-                      onChange={(e) => { const n = [...items]; n[idx].vat_amount = +e.target.value || 0; setItems(n); }} placeholder="VAT" />
+                      onChange={(e) => { const n = [...items]; const current = n[idx]; if (!current) return; n[idx] = { ...current, vat_amount: +e.target.value || 0 }; setItems(n); }} placeholder="VAT" />
                     <Button size="sm" variant="ghost" className="col-span-1 h-8" onClick={() => setItems(items.filter((_, i) => i !== idx))}>
                       <Trash2 className="h-3 w-3 text-destructive" />
                     </Button>

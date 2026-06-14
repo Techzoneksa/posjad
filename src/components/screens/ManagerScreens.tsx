@@ -1490,7 +1490,8 @@ export function ManagerCashiers() {
     (async () => {
       try {
         const { listShifts } = await import("@/lib/shifts.functions");
-        const data = await listShifts({ data: { limit: 500 } });
+        const { apiFetch } = await import("@/lib/api-client");
+        const data = await apiFetch(listShifts, { data: { limit: 500 } });
         if (!cancelled) setShifts(data as any);
       } catch (e) {
         console.error("listShifts failed", e);
@@ -1649,7 +1650,8 @@ export function ManagerShifts() {
     (async () => {
       try {
         const { listShifts } = await import("@/lib/shifts.functions");
-        const data = await listShifts({ data: { limit: 100 } });
+        const { apiFetch } = await import("@/lib/api-client");
+        const data = await apiFetch(listShifts, { data: { limit: 100 } });
         if (!cancelled) setRows(data as any);
       } catch (e) {
         console.error("listShifts failed", e);
@@ -2609,4 +2611,3 @@ function ZatcaSettingsPanel() {
     </div>
   );
 }
-

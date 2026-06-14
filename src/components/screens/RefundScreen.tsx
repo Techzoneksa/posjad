@@ -146,7 +146,8 @@ export function RefundScreen() {
     "cash" | "card" | "mada" | "apple_pay" | "visa" | "mastercard" | "mixed"
   >(() => {
     const positive = payments.filter((p) => p.amount > 0);
-    if (positive.length === 1) return positive[0].method as any;
+    const first = positive[0];
+    if (positive.length === 1 && first) return first.method as any;
     if (positive.length > 1) return "mixed";
     return "cash";
   }, [payments]);

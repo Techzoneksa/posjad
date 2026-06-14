@@ -190,7 +190,7 @@ export async function processQueue(opts: { maxItems?: number; invoiceId?: string
         .update({
           status: "local_validation_failed",
           local_validation_errors: issues as any,
-          last_error_message: issues[0].message,
+          last_error_message: issues[0]?.message ?? "Invoice generation data is missing.",
           last_error_at: new Date().toISOString(),
           last_attempt_at: new Date().toISOString(),
         })
@@ -220,7 +220,7 @@ export async function processQueue(opts: { maxItems?: number; invoiceId?: string
         .update({
           status: "local_validation_failed",
           local_validation_errors: issues as any,
-          last_error_message: issues[0].message,
+          last_error_message: issues[0]?.message ?? "Local validation failed.",
           last_error_at: new Date().toISOString(),
           last_attempt_at: new Date().toISOString(),
         })
@@ -245,7 +245,7 @@ export async function processQueue(opts: { maxItems?: number; invoiceId?: string
         .update({
           status: "local_validation_failed",
           local_validation_errors: payload,
-          last_error_message: p2.issues[0].message,
+          last_error_message: p2.issues[0]?.message ?? "Phase 2 validation failed.",
           last_error_at: new Date().toISOString(),
           last_attempt_at: new Date().toISOString(),
         })
@@ -360,7 +360,7 @@ export async function processQueue(opts: { maxItems?: number; invoiceId?: string
         .update({
           status: "local_validation_failed",
           local_validation_errors: issues as any,
-          last_error_message: issues[0].message,
+          last_error_message: issues[0]?.message ?? "Credit note generation data is missing.",
           last_error_at: new Date().toISOString(),
           last_attempt_at: new Date().toISOString(),
         })
@@ -387,7 +387,7 @@ export async function processQueue(opts: { maxItems?: number; invoiceId?: string
         .update({
           status: "local_validation_failed",
           local_validation_errors: issues as any,
-          last_error_message: issues[0].message,
+          last_error_message: issues[0]?.message ?? "Local validation failed.",
           last_error_at: new Date().toISOString(),
           last_attempt_at: new Date().toISOString(),
         })
@@ -408,7 +408,7 @@ export async function processQueue(opts: { maxItems?: number; invoiceId?: string
         .update({
           status: "local_validation_failed",
           local_validation_errors: { issues: p2cn.issues, diagnostics: p2cn.diagnostics } as any,
-          last_error_message: p2cn.issues[0].message,
+          last_error_message: p2cn.issues[0]?.message ?? "Phase 2 validation failed.",
           last_error_at: new Date().toISOString(),
           last_attempt_at: new Date().toISOString(),
         })

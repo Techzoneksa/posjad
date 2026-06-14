@@ -23,17 +23,23 @@ interface AsnNode {
   fullEnd: number;      // exclusive — end of TLV
 }
 
+function readByte(buf: Uint8Array, off: number, context: string): number {
+  const value = buf[off];
+  if (value == null) throw new Error(`${context}: unexpected end of DER at offset ${off}`);
+  return value;
+}
+
 function readLen(buf: Uint8Array, off: number): { len: number; next: number } {
-  const first = buf[off];
+  const first = readByte(buf, off, "DER length");
   if (first < 0x80) return { len: first, next: off + 1 };
   const n = first & 0x7f;
   let len = 0;
-  for (let i = 0; i < n; i++) len = (len << 8) | buf[off + 1 + i];
+  for (let i = 0; i < n; i++) len = (len << 8) | readByte(buf, off + 1 + i, "DER length");
   return { len, next: off + 1 + n };
 }
 
 function readTlv(buf: Uint8Array, off: number): AsnNode {
-  const tag = buf[off];
+  const tag = readByte(buf, off, "DER tag");
   const { len, next } = readLen(buf, off + 1);
   return {
     tag,
@@ -85,12 +91,13 @@ function escapeRfc4514Value(value: string): string {
 
 function decodeOid(content: Uint8Array): string {
   const out: number[] = [];
-  const b0 = content[0];
+  const b0 = readByte(content, 0, "OID");
   out.push(Math.floor(b0 / 40), b0 % 40);
   let v = 0;
   for (let i = 1; i < content.length; i++) {
-    v = (v << 7) | (content[i] & 0x7f);
-    if ((content[i] & 0x80) === 0) {
+    const b = readByte(content, i, "OID");
+    v = (v << 7) | (b & 0x7f);
+    if ((b & 0x80) === 0) {
       out.push(v);
       v = 0;
     }
@@ -118,9 +125,12 @@ function parseDn(buf: Uint8Array, dnNode: AsnNode): string {
     for (const atv of children(buf, rdn)) {
       const atvKids = children(buf, atv);
       if (atvKids.length < 2) continue;
-      const oid = decodeOid(bytesOf(buf, atvKids[0]));
+      const oidNode = atvKids[0];
+      const valueNode = atvKids[1];
+      if (!oidNode || !valueNode) continue;
+      const oid = decodeOid(bytesOf(buf, oidNode));
       const name = OID_NAMES[oid] ?? oid;
-      const val = decString(buf, atvKids[1]);
+      const val = decString(buf, valueNode);
       parts.push(`${name}=${escapeRfc4514Value(val)}`);
     }
   }
@@ -192,14 +202,14 @@ export function parseZatcaCsidToken(token: string): ParsedCert {
   if (/^[A-Za-z0-9+/=]+$/.test(asAscii) && asAscii.length > 100) {
     try {
       const inner = Buffer.from(asAscii, "base64");
-      if (inner[0] === 0x30) der = inner; // SEQUENCE → likely real DER
+      if ((inner[0] ?? 0) === 0x30) der = inner; // SEQUENCE → likely real DER
     } catch {
       /* keep der */
     }
   }
 
   const buf = new Uint8Array(der);
-  if (buf[0] !== 0x30) {
+  if ((buf[0] ?? 0) !== 0x30) {
     throw new Error("CSID token is not a DER X.509 certificate (first byte != 0x30)");
   }
 
@@ -211,6 +221,9 @@ export function parseZatcaCsidToken(token: string): ParsedCert {
   }
   const tbs = rootKids[0];
   const sigValueNode = rootKids[2];
+  if (!tbs || !sigValueNode) {
+    throw new Error("Malformed X.509: missing tbsCertificate or signatureValue");
+  }
 
   // signatureValue is a BIT STRING; first byte = unused bits, rest = data.
   const sigBitstring = bytesOf(buf, sigValueNode);
@@ -227,17 +240,23 @@ export function parseZatcaCsidToken(token: string): ParsedCert {
   //   ...
   const tbsKids = children(buf, tbs);
   let idx = 0;
-  if ((tbsKids[idx].tag & 0xe0) === 0xa0) idx++; // skip explicit version [0]
+  const maybeVersion = tbsKids[idx];
+  if (maybeVersion && (maybeVersion.tag & 0xe0) === 0xa0) idx++; // skip explicit version [0]
   const serial = tbsKids[idx++];
-  idx++; // signature alg
+  const signatureAlg = tbsKids[idx++];
   const issuer = tbsKids[idx++];
   const validity = tbsKids[idx++];
   const subject = tbsKids[idx++];
   const spki = tbsKids[idx++];
+  if (!serial || !signatureAlg || !issuer || !validity || !subject || !spki) {
+    throw new Error("Malformed X.509: missing required TBSCertificate fields");
+  }
 
   const validityKids = children(buf, validity);
-  const notBeforeIso = validityKids[0] ? decodeAsn1Time(buf, validityKids[0]) : null;
-  const notAfterIso = validityKids[1] ? decodeAsn1Time(buf, validityKids[1]) : null;
+  const notBefore = validityKids[0];
+  const notAfter = validityKids[1];
+  const notBeforeIso = notBefore ? decodeAsn1Time(buf, notBefore) : null;
+  const notAfterIso = notAfter ? decodeAsn1Time(buf, notAfter) : null;
 
   const certPemBodyBase64 = Buffer.from(buf).toString("base64");
 
