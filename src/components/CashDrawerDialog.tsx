@@ -149,7 +149,7 @@ export function CashDrawerDialog({ open, onClose }: { open: boolean; onClose: ()
               </SelectTrigger>
               <SelectContent>
                 {reasons.map((r) => (
-                  <SelectItem key={r.ar} value={lang === "ar" ? r.ar : r.en}>
+                  <SelectItem key={r.ar} value={lang === "ar" ? (r.ar || "") : (r.en || "")}>
                     {lang === "ar" ? r.ar : r.en}
                   </SelectItem>
                 ))}
