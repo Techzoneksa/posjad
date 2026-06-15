@@ -142,6 +142,39 @@ async function bootstrapOwner(input) {
   return { ok: true, userId: data.user.id };
 }
 
+async function resolveAdminLogin(input) {
+  const login = String(input?.login ?? "").trim();
+  if (!login) throw httpError(400, "login is required");
+  if (login.includes("@")) return { email: login };
+
+  const { data: profile, error } = await supabaseAdmin
+    .from("profiles")
+    .select("id, active, username")
+    .eq("username", login)
+    .maybeSingle();
+  if (error) throw httpError(400, error.message, error);
+  if (!profile) throw httpError(404, "Invalid login credentials");
+  if (profile.active === false) throw httpError(401, "Account disabled");
+
+  const { data: roles, error: rolesError } = await supabaseAdmin
+    .from("user_roles")
+    .select("role")
+    .eq("user_id", profile.id);
+  if (rolesError) throw httpError(400, rolesError.message, rolesError);
+
+  const roleList = (roles ?? []).map((r) => r.role);
+  if (!roleList.some((role) => FINANCE_ROLES.has(role))) {
+    throw httpError(403, "Use POS login for cashiers");
+  }
+
+  const { data: authUser, error: authError } = await supabaseAdmin.auth.admin.getUserById(profile.id);
+  if (authError) throw httpError(400, authError.message, authError);
+  const email = authUser?.user?.email;
+  if (!email) throw httpError(404, "Invalid login credentials");
+
+  return { email };
+}
+
 async function listCatalog(_input, req) {
   const db = req.supabase;
   const [categories, products, addonGroups, addons, productAddonGroups] = await Promise.all([
@@ -1031,6 +1064,7 @@ async function paySalaryRecord(input, req) {
 export const actionRegistry = {
   bootstrapStatus: { auth: false, handler: bootstrapStatus },
   bootstrapOwner: { auth: false, handler: bootstrapOwner },
+  resolveAdminLogin: { auth: false, handler: resolveAdminLogin },
 
   listCatalog: { handler: listCatalog },
   upsertCategory: { handler: upsertRow("categories") },

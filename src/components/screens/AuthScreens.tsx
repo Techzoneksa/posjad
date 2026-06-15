@@ -218,9 +218,14 @@ export function DashboardLoginScreen() {
       const acc = await signInAdmin(u.trim(), p);
       signIn(acc.fullName || acc.username, acc.role);
     } catch (ex: any) {
+      const message = ex?.message ?? "";
       setErr(ar ? "بيانات الدخول غير صحيحة" : "Invalid login credentials");
-      if (ex?.message === "Account disabled") {
+      if (message === "Account disabled") {
         setErr(ar ? "تم تعطيل هذا الحساب" : "Account disabled");
+      } else if (message === "Use POS login for cashiers") {
+        setErr(ar ? "هذا حساب كاشير. استخدم دخول POS" : "This is a cashier account. Use POS login");
+      } else if (message === "Profile missing") {
+        setErr(ar ? "الحساب غير مكتمل في Supabase: ملف المستخدم غير موجود" : "Supabase account is incomplete: profile is missing");
       }
     } finally {
       setBusy(false);
@@ -283,8 +288,8 @@ export function DashboardLoginScreen() {
           {mode === "signin" ? (
             <form onSubmit={submit} className="space-y-4" autoComplete="off">
               <div className="space-y-1.5">
-                <label className="text-xs font-medium">{ar ? "البريد الإلكتروني" : "Email"}</label>
-                <Input value={u} onChange={e => setU(e.target.value)} type="email" autoFocus autoComplete="off" className="h-11" />
+                <label className="text-xs font-medium">{ar ? "البريد الإلكتروني أو اسم المستخدم" : "Email or username"}</label>
+                <Input value={u} onChange={e => setU(e.target.value)} type="text" autoFocus autoComplete="username" className="h-11" />
               </div>
               <div className="space-y-1.5">
                 <div className="flex items-center justify-between">

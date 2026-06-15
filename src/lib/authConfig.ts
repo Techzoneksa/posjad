@@ -2,6 +2,8 @@
 
 // Real auth via Supabase. Cashiers use synthetic email {username}@pos.local + PIN as password.
 import { supabase } from "@/integrations/supabase/client";
+import { apiFetch } from "@/lib/api-client";
+import { resolveAdminLogin } from "@/lib/auth.functions";
 
 export type AppRole = "owner" | "manager" | "finance" | "cashier";
 
@@ -45,7 +47,10 @@ export async function signInCashier(username: string, pin: string): Promise<Sess
   });
   if (error || !data.user) throw new Error("Invalid credentials");
   const u = await loadSessionUser(data.user.id);
-  if (!u) throw new Error("Profile missing");
+  if (!u) {
+    await supabase.auth.signOut();
+    throw new Error("Profile missing");
+  }
   if (u.role !== "cashier") {
     await supabase.auth.signOut();
     throw new Error("Not a cashier account");
@@ -55,13 +60,22 @@ export async function signInCashier(username: string, pin: string): Promise<Sess
 }
 
 export async function signInAdmin(email: string, password: string): Promise<SessionUser> {
+  let authEmail = email.trim();
+  if (!authEmail.includes("@")) {
+    const resolved = await apiFetch(resolveAdminLogin, { data: { login: authEmail } });
+    authEmail = resolved.email;
+  }
+
   const { data, error } = await supabase.auth.signInWithPassword({
-    email: email.trim(),
+    email: authEmail,
     password,
   });
   if (error || !data.user) throw new Error("Invalid credentials");
   const u = await loadSessionUser(data.user.id);
-  if (!u) throw new Error("Profile missing");
+  if (!u) {
+    await supabase.auth.signOut();
+    throw new Error("Profile missing");
+  }
   if (u.role === "cashier") {
     await supabase.auth.signOut();
     throw new Error("Use POS login for cashiers");
