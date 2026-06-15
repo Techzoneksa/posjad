@@ -3,7 +3,7 @@
 // Real auth via Supabase. Cashiers use synthetic email {username}@pos.local + PIN as password.
 import { supabase } from "@/integrations/supabase/client";
 import { apiFetch } from "@/lib/api-client";
-import { resolveAdminLogin } from "@/lib/auth.functions";
+import { getSessionUser, resolveAdminLogin } from "@/lib/auth.functions";
 
 export type AppRole = "owner" | "manager" | "finance" | "cashier";
 
@@ -19,25 +19,8 @@ function cashierEmail(username: string) {
   return `${username.trim().toLowerCase()}@pos.local`;
 }
 
-async function loadSessionUser(userId: string): Promise<SessionUser | null> {
-  const [{ data: profile }, { data: roleRows }] = await Promise.all([
-    supabase.from("profiles").select("id, full_name, username, active").eq("id", userId).maybeSingle(),
-    supabase.from("user_roles").select("role").eq("user_id", userId),
-  ]);
-  if (!profile) return null;
-  if (!profile.active) {
-    await supabase.auth.signOut();
-    throw new Error("Account disabled");
-  }
-  const role = (roleRows?.[0]?.role ?? "cashier") as AppRole;
-  const { data: auth } = await supabase.auth.getUser();
-  return {
-    id: profile.id,
-    fullName: profile.full_name,
-    username: profile.username,
-    email: auth.user?.email ?? null,
-    role,
-  };
+async function loadSessionUser(_userId: string): Promise<SessionUser | null> {
+  return apiFetch<SessionUser>(getSessionUser);
 }
 
 export async function signInCashier(username: string, pin: string): Promise<SessionUser> {

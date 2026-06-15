@@ -62,7 +62,7 @@ async function maybe(query) {
 }
 
 function activeDb(req, privileged = false) {
-  return privileged ? req.supabaseAdmin : req.supabase;
+  return privileged || req.auth?.isSuperAdmin ? req.supabaseAdmin : req.supabase;
 }
 
 function selectAll(table, opts = {}) {
@@ -173,6 +173,22 @@ async function resolveAdminLogin(input) {
   if (!email) throw httpError(404, "Invalid login credentials");
 
   return { email };
+}
+
+async function getSessionUser(_input, req) {
+  const profile = req.auth.profile;
+  if (!profile) throw httpError(401, "Profile missing");
+
+  const role = ["owner", "manager", "finance", "cashier"].find((r) => req.auth.roles.includes(r));
+  if (!role) throw httpError(403, "Forbidden: missing application role");
+
+  return {
+    id: req.auth.uid,
+    fullName: profile.full_name ?? "",
+    username: profile.username ?? req.auth.user.email?.split("@")[0] ?? "",
+    email: req.auth.user.email ?? null,
+    role,
+  };
 }
 
 async function listCatalog(_input, req) {
@@ -1065,6 +1081,7 @@ export const actionRegistry = {
   bootstrapStatus: { auth: false, handler: bootstrapStatus },
   bootstrapOwner: { auth: false, handler: bootstrapOwner },
   resolveAdminLogin: { auth: false, handler: resolveAdminLogin },
+  getSessionUser: { handler: getSessionUser },
 
   listCatalog: { handler: listCatalog },
   upsertCategory: { handler: upsertRow("categories") },
