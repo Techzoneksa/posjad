@@ -29,10 +29,6 @@ export async function signInCashier(username: string, pin: string): Promise<Sess
     password: pin,
   });
   if (error || !data.user) {
-    console.log("Supabase error:", JSON.stringify(error));
-    console.log("Supabase data:", JSON.stringify(data));
-    console.log("Supabase error.message:", error?.message);
-    console.log("Supabase error.status:", error?.status);
     throw new Error("Invalid credentials");
   }
   const u = await loadSessionUser(data.user.id);
@@ -60,10 +56,6 @@ export async function signInAdmin(email: string, password: string): Promise<Sess
     password,
   });
   if (error || !data.user) {
-    console.log("Supabase error:", JSON.stringify(error));
-    console.log("Supabase data:", JSON.stringify(data));
-    console.log("Supabase error.message:", error?.message);
-    console.log("Supabase error.status:", error?.status);
     throw new Error("Invalid credentials");
   }
   const u = await loadSessionUser(data.user.id);

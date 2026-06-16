@@ -12,12 +12,14 @@ node_modules
 out
 dist
 dist-ssr
+deploy
 *.local
 .env
 .env.*
 !.env.example
 !server/.env.example
 .git.broken-codex-*
+tsconfig.tsbuildinfo
 
 # Editor directories and files
 .vscode/*

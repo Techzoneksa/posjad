@@ -4,12 +4,16 @@ import type { Database } from './types';
 
 function createSupabaseClient() {
   const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const SUPABASE_PUBLISHABLE_KEY = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
+  const SUPABASE_PUBLISHABLE_KEY =
+    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY ??
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
   if (!SUPABASE_URL || !SUPABASE_PUBLISHABLE_KEY) {
     const missing = [
       ...(!SUPABASE_URL ? ['NEXT_PUBLIC_SUPABASE_URL'] : []),
-      ...(!SUPABASE_PUBLISHABLE_KEY ? ['NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY'] : []),
+      ...(!SUPABASE_PUBLISHABLE_KEY
+        ? ['NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY or NEXT_PUBLIC_SUPABASE_ANON_KEY']
+        : []),
     ];
     const message = `Missing Supabase environment variable(s): ${missing.join(', ')}. Configure them in the Next.js hosting environment.`;
     console.error(`[Supabase] ${message}`);
