@@ -1,4 +1,4 @@
-import ScreenPage from "@/app/_shared/ScreenPage";
+import ScreenPage from "@/components/ScreenPage";
 
 export default function Page() {
   return <ScreenPage screen="m_readiness" />;
