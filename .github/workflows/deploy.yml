@@ -46,6 +46,12 @@ jobs:
             echo "SUPABASE_SERVICE_ROLE_KEY=$SUPABASE_SERVICE_ROLE_KEY" >> "$GITHUB_ENV"
           fi
 
+      - name: Clear Next.js cache
+        run: rm -rf .next
+
+      - name: Clear npm cache
+        run: npm cache clean --force
+
       - name: Install Frontend Dependencies & Build
         env:
           NEXT_TELEMETRY_DISABLED: "1"
