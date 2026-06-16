@@ -2413,8 +2413,6 @@ create trigger trg_zatca_invoice_queue_touch
 -- Existing products/categories are deactivated instead of hard-deleted so
 -- historical orders and invoice references remain intact.
 
-BEGIN;
-
 DELETE FROM public.product_addon_groups;
 DELETE FROM public.addons;
 DELETE FROM public.addon_groups;
@@ -2491,8 +2489,6 @@ SET brand_name_ar = 'غُرزة',
     branch_en = CASE WHEN trim(coalesce(branch_en, '')) = '' THEN 'Main Branch' ELSE branch_en END,
     updated_at = now()
 WHERE id = true;
-
-COMMIT;
 
 -- ============================================================================
 -- Final hardening layer
