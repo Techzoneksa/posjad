@@ -5,10 +5,10 @@ set -euo pipefail
 # Run as root or with sudo on a fresh Ubuntu VPS.
 #
 # Required environment overrides:
-#   DOMAIN=pos.example.com EMAIL=admin@example.com bash scripts/hostinger-setup.sh
+#   DOMAIN=ac.jaadscloud.com EMAIL=admin@example.com bash scripts/hostinger-setup.sh
 
 APP_DIR="${APP_DIR:-/var/www/posjad}"
-DOMAIN="${DOMAIN:-jaad-cloud.example.com}"
+DOMAIN="${DOMAIN:-ac.jaadscloud.com}"
 EMAIL="${EMAIL:-admin@example.com}"
 DEPLOY_USER="${DEPLOY_USER:-deploy}"
 FRONTEND_PORT="${FRONTEND_PORT:-3000}"
