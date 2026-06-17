@@ -48,11 +48,12 @@ function unwrapServerFnInput<Input>(input?: ServerFnInput<Input>): Input | undef
 export async function apiFetch<Output = any, Input = any>(
   action: ApiAction<Input, Output> | string,
   input?: ServerFnInput<Input>,
+  options?: { accessToken?: string | null },
 ): Promise<Output> {
   const descriptor =
     typeof action === "string" ? createApiAction<Input, Output>(action) : action;
   const data = unwrapServerFnInput(input);
-  const token = await getAccessToken();
+  const token = options?.accessToken ?? await getAccessToken();
   const headers: Record<string, string> = {
     Accept: "application/json",
   };

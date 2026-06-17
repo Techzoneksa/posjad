@@ -19,8 +19,8 @@ function cashierEmail(username: string) {
   return `${username.trim().toLowerCase()}@pos.local`;
 }
 
-async function loadSessionUser(_userId: string): Promise<SessionUser | null> {
-  return apiFetch<SessionUser>(getSessionUser);
+async function loadSessionUser(_userId: string, accessToken?: string | null): Promise<SessionUser | null> {
+  return apiFetch<SessionUser>(getSessionUser, undefined, { accessToken });
 }
 
 export async function signInCashier(username: string, pin: string): Promise<SessionUser> {
@@ -31,7 +31,7 @@ export async function signInCashier(username: string, pin: string): Promise<Sess
   if (error || !data.user) {
     throw new Error("Invalid credentials");
   }
-  const u = await loadSessionUser(data.user.id);
+  const u = await loadSessionUser(data.user.id, data.session?.access_token);
   if (!u) {
     await supabase.auth.signOut();
     throw new Error("Profile missing");
@@ -58,7 +58,7 @@ export async function signInAdmin(email: string, password: string): Promise<Sess
   if (error || !data.user) {
     throw new Error("Invalid credentials");
   }
-  const u = await loadSessionUser(data.user.id);
+  const u = await loadSessionUser(data.user.id, data.session?.access_token);
   if (!u) {
     await supabase.auth.signOut();
     throw new Error("Profile missing");
