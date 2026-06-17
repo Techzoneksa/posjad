@@ -1,5 +1,3 @@
-import "dotenv/config";
-
 function pick(...names) {
   for (const name of names) {
     const value = process.env[name];
@@ -20,7 +18,7 @@ export const env = {
   corsOrigin: process.env.CORS_ORIGIN?.split(",").map((s) => s.trim()).filter(Boolean) ?? true,
   bodyLimit: process.env.API_BODY_LIMIT ?? "2mb",
   supabaseUrl: required("SUPABASE_URL", "NEXT_PUBLIC_SUPABASE_URL"),
-  supabaseAnonKey: required("SUPABASE_ANON_KEY", "NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY"),
+  supabaseAnonKey: required("SUPABASE_ANON_KEY", "NEXT_PUBLIC_SUPABASE_ANON_KEY", "NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY"),
   supabaseServiceRoleKey: required("SUPABASE_SERVICE_ROLE_KEY"),
   publicWebhookSecret: pick("PUBLIC_WEBHOOK_HMAC_SECRET", "WEBHOOK_HMAC_SECRET"),
   zatcaSigningServiceUrl: pick("ZATCA_SIGNING_SERVICE_URL").replace(/\/+$/, ""),
