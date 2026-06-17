@@ -16,7 +16,8 @@ export type SessionUser = {
 };
 
 function cashierEmail(username: string) {
-  return `${username.trim().toLowerCase()}@pos.local`;
+  const login = username.trim().toLowerCase();
+  return login.includes("@") ? login : `${login}@pos.local`;
 }
 
 async function loadSessionUser(_userId: string, accessToken?: string | null): Promise<SessionUser | null> {

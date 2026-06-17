@@ -168,6 +168,9 @@ async function authenticate(request: NextRequest, req: RpcRequest) {
   }
 
   const roleList = rolesError ? [] : (roles ?? []).map((r: { role: string }) => r.role);
+  if (!claimedAppRole && roleList.length === 0 && data.user.email?.toLowerCase().endsWith("@pos.local")) {
+    roleList.push("cashier");
+  }
   if (claimedAppRole && (isSuperAdmin || roleList.length === 0) && !roleList.includes(claimedAppRole)) {
     const { error: upsertRoleError } = await supabaseAdmin
       .from("user_roles")
