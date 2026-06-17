@@ -1,11 +1,12 @@
 import type { ReactNode } from "react";
 
-import ClientApp from "@/components/ClientApp";
+import ClientApp, { type AppMode } from "@/components/ClientApp";
 import type { Screen } from "@/lib/store";
 import { cn } from "@/lib/utils";
 
 type ScreenPageProps = {
   screen?: Screen;
+  mode?: AppMode;
   children?: ReactNode;
   title?: ReactNode;
   description?: ReactNode;
@@ -15,13 +16,14 @@ type ScreenPageProps = {
 
 export function ScreenPage({
   screen,
+  mode,
   children,
   title,
   description,
   actions,
   className,
 }: ScreenPageProps) {
-  if (screen) return <ClientApp initialScreen={screen} />;
+  if (screen) return <ClientApp initialScreen={screen} mode={mode} />;
 
   return (
     <main className={cn("min-h-screen bg-background text-foreground", className)}>

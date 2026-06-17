@@ -1,7 +1,7 @@
 "use client";
 
 import { lazy, Suspense, type ComponentType } from "react";
-import { useApp, ADMIN_SCREENS } from "@/lib/store";
+import { useApp, ADMIN_SCREENS, POS_SCREENS } from "@/lib/store";
 import { AccessDeniedScreen, LoginSelectorScreen } from "@/components/screens/AuthScreens";
 import { OpenShiftScreen } from "@/components/screens/OpenShiftScreen";
 import { POSScreen } from "@/components/screens/POSScreen";
@@ -11,6 +11,7 @@ import { RecentOrdersScreen } from "@/components/screens/RecentOrdersScreen";
 import { RefundScreen } from "@/components/screens/RefundScreen";
 import { CloseShiftScreen } from "@/components/screens/CloseShiftScreen";
 import AppDataProviders from "@/components/AppDataProviders";
+import type { AppMode } from "@/components/ClientApp";
 
 function lazyNamed(loader: () => Promise<Record<string, unknown>>, name: string) {
   return lazy(async () => ({ default: (await loader())[name] as ComponentType<any> }));
@@ -57,9 +58,11 @@ const ManagerPermissions = lazyNamed(() => import("@/components/screens/Phase6Sc
 const ManagerQA = lazyNamed(() => import("@/components/screens/Phase6Screens"), "ManagerQA");
 const ManagerBackend = lazyNamed(() => import("@/components/screens/Phase6Screens"), "ManagerBackend");
 
-function AuthenticatedScreens() {
+function AuthenticatedScreens({ mode }: { mode: AppMode }) {
   const { screen, user } = useApp();
 
+  if (mode === "pos" && !POS_SCREENS.includes(screen)) return <AccessDeniedScreen />;
+  if (mode === "admin" && !ADMIN_SCREENS.includes(screen)) return <AccessDeniedScreen />;
   if (user?.role === "cashier" && ADMIN_SCREENS.includes(screen)) return <AccessDeniedScreen />;
 
   switch (screen) {
@@ -110,11 +113,11 @@ function AuthenticatedScreens() {
   }
 }
 
-export default function AuthenticatedRouter() {
+export default function AuthenticatedRouter({ mode = "root" }: { mode?: AppMode }) {
   return (
-    <AppDataProviders>
+    <AppDataProviders mode={mode}>
       <Suspense fallback={<ScreenLoading />}>
-        <AuthenticatedScreens />
+        <AuthenticatedScreens mode={mode} />
       </Suspense>
     </AppDataProviders>
   );

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { useApp } from "@/lib/store";
 import { Logo } from "@/components/Logo";
 import { Button } from "@/components/ui/button";
@@ -123,6 +124,7 @@ export function LoginSelectorScreen() {
 /* ─────────── B) POS Login ─────────── */
 export function POSLoginScreen() {
   const { signIn, lang, setScreen } = useApp();
+  const router = useRouter();
   const ar = lang === "ar";
   const [u, setU] = useState("");
   const [p, setP] = useState("");
@@ -137,6 +139,7 @@ export function POSLoginScreen() {
     try {
       const acc = await signInCashier(u.trim(), p);
       signIn(acc.fullName || acc.username, "cashier");
+      router.replace("/pos/cashier");
     } catch (ex: any) {
       setErr(ar ? "بيانات الدخول غير صحيحة" : "Invalid login credentials");
       if (ex?.message === "Account disabled") {
@@ -150,7 +153,7 @@ export function POSLoginScreen() {
   return (
     <AuthChrome>
       <div className="w-full max-w-md">
-        <button onClick={() => setScreen("login_selector")} className="mb-3 inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground">
+        <button onClick={() => { setScreen("login_selector"); router.push("/"); }} className="mb-3 inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground">
           <ArrowLeft className="h-3.5 w-3.5 rtl:rotate-180" />
           {ar ? "رجوع" : "Back"}
         </button>
@@ -190,6 +193,7 @@ export function POSLoginScreen() {
 /* ─────────── C) Dashboard Login ─────────── */
 export function DashboardLoginScreen() {
   const { signIn, lang, setScreen } = useApp();
+  const router = useRouter();
   const ar = lang === "ar";
   const [u, setU] = useState("");
   const [p, setP] = useState("");
@@ -217,6 +221,7 @@ export function DashboardLoginScreen() {
     try {
       const acc = await signInAdmin(u.trim(), p);
       signIn(acc.fullName || acc.username, acc.role);
+      router.replace("/admin/dashboard");
     } catch (ex: any) {
       const message = ex?.message ?? "";
       setErr(ar ? "بيانات الدخول غير صحيحة" : "Invalid login credentials");
@@ -265,7 +270,14 @@ export function DashboardLoginScreen() {
     <AuthChrome>
       <div className="w-full max-w-md">
         <button
-          onClick={() => (mode === "forgot" ? setMode("signin") : setScreen("login_selector"))}
+          onClick={() => {
+            if (mode === "forgot") {
+              setMode("signin");
+              return;
+            }
+            setScreen("login_selector");
+            router.push("/");
+          }}
           className="mb-3 inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground"
         >
           <ArrowLeft className="h-3.5 w-3.5 rtl:rotate-180" />

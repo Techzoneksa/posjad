@@ -1,5 +1,5 @@
-import ScreenPage from "../../../components/ScreenPage";
+import { redirect } from "next/navigation";
 
 export default function Page() {
-  return <ScreenPage screen="dashboard_login" />;
+  redirect("/admin/login");
 }

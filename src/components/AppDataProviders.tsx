@@ -7,7 +7,23 @@ import { Phase3Provider } from "@/lib/phase3Store";
 import { Phase5Provider } from "@/lib/phase5Store";
 import { Phase6Provider } from "@/lib/phase6Store";
 
-export default function AppDataProviders({ children }: { children: ReactNode }) {
+type ProviderMode = "root" | "pos" | "admin";
+
+export default function AppDataProviders({
+  children,
+  mode = "root",
+}: {
+  children: ReactNode;
+  mode?: ProviderMode;
+}) {
+  if (mode === "pos") {
+    return (
+      <SettingsProvider>
+        <CatalogProvider>{children}</CatalogProvider>
+      </SettingsProvider>
+    );
+  }
+
   return (
     <SettingsProvider>
       <CatalogProvider>

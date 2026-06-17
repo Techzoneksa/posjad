@@ -14,6 +14,8 @@ import {
 import { Toaster } from "@/components/ui/sonner";
 import { AppProvider, ADMIN_SCREENS, POS_SCREENS, useApp, type Screen } from "@/lib/store";
 
+export type AppMode = "root" | "pos" | "admin";
+
 const AUTH_SCREENS: Screen[] = [
   "login_selector",
   "pos_login",
@@ -34,10 +36,36 @@ function unauthenticatedScreenFor(screen: Screen): Screen {
   return "login_selector";
 }
 
-function ScreenRouter({ initialScreen }: { initialScreen?: Screen }) {
+function ScreenRouter({ initialScreen, mode }: { initialScreen?: Screen; mode: AppMode }) {
   const { screen, setScreen, user } = useApp();
 
   useEffect(() => {
+    if (mode === "pos") {
+      if (!user) {
+        setScreen("pos_login");
+        return;
+      }
+      if (user.role !== "cashier") {
+        setScreen("access_denied");
+        return;
+      }
+      if (initialScreen && POS_SCREENS.includes(initialScreen)) setScreen(initialScreen);
+      return;
+    }
+
+    if (mode === "admin") {
+      if (!user) {
+        setScreen("dashboard_login");
+        return;
+      }
+      if (user.role === "cashier") {
+        setScreen("access_denied");
+        return;
+      }
+      if (initialScreen && ADMIN_SCREENS.includes(initialScreen)) setScreen(initialScreen);
+      return;
+    }
+
     if (!initialScreen) return;
     if (initialScreen === "reset_password") {
       setScreen("reset_password");
@@ -48,11 +76,14 @@ function ScreenRouter({ initialScreen }: { initialScreen?: Screen }) {
       return;
     }
     if (!AUTH_SCREENS.includes(initialScreen)) setScreen(initialScreen);
-  }, [initialScreen, setScreen, user]);
+  }, [initialScreen, mode, setScreen, user]);
 
   if (screen === "reset_password") return <ResetPasswordScreen />;
 
   if (!user) {
+    if (mode === "pos") return <POSLoginScreen />;
+    if (mode === "admin") return <DashboardLoginScreen />;
+
     switch (screen) {
       case "pos_login":
         return <POSLoginScreen />;
@@ -67,10 +98,19 @@ function ScreenRouter({ initialScreen }: { initialScreen?: Screen }) {
     }
   }
 
-  return <AuthenticatedRouter />;
+  if (mode === "pos" && user.role !== "cashier") return <AccessDeniedScreen />;
+  if (mode === "admin" && user.role === "cashier") return <AccessDeniedScreen />;
+
+  return <AuthenticatedRouter mode={mode} />;
 }
 
-export default function ClientApp({ initialScreen }: { initialScreen?: Screen }) {
+export default function ClientApp({
+  initialScreen,
+  mode = "root",
+}: {
+  initialScreen?: Screen;
+  mode?: AppMode;
+}) {
   const [queryClient] = useState(
     () =>
       new QueryClient({
@@ -85,7 +125,10 @@ export default function ClientApp({ initialScreen }: { initialScreen?: Screen })
         },
       }),
   );
-  const app = useMemo(() => <ScreenRouter initialScreen={initialScreen} />, [initialScreen]);
+  const app = useMemo(
+    () => <ScreenRouter initialScreen={initialScreen} mode={mode} />,
+    [initialScreen, mode],
+  );
 
   return (
     <QueryClientProvider client={queryClient}>
