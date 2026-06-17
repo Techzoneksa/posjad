@@ -100,11 +100,19 @@ export async function getCurrentSessionUser(): Promise<SessionUser | null> {
   const hasPosSession =
     typeof window !== "undefined" &&
     window.localStorage.getItem(POS_SESSION_STORAGE_KEY) === "1";
+  const isPosRoute =
+    typeof window !== "undefined" &&
+    window.location.pathname.startsWith("/pos");
 
-  if (hasPosSession) {
+  if (hasPosSession || isPosRoute) {
     try {
       const posUser = await apiFetch<SessionUser>(getSessionUser, undefined, { skipAccessToken: true });
-      if (posUser?.role === "cashier") return posUser;
+      if (posUser?.role === "cashier") {
+        if (typeof window !== "undefined") {
+          window.localStorage.setItem(POS_SESSION_STORAGE_KEY, "1");
+        }
+        return posUser;
+      }
     } catch {
       if (typeof window !== "undefined") {
         window.localStorage.removeItem(POS_SESSION_STORAGE_KEY);
