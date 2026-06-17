@@ -257,6 +257,17 @@ async function listUsers(_input, req) {
   }));
 }
 
+async function upsertCashierLogin(req, { id, fullName, username, pin, active = true }) {
+  const { error } = await req.supabaseAdmin.rpc("upsert_cashier_pin", {
+    p_profile_id: id,
+    p_username: username,
+    p_full_name: fullName || username,
+    p_pin: pin || null,
+    p_active: Boolean(active),
+  });
+  if (error) throw httpError(400, error.message, error);
+}
+
 async function createUser(input, req) {
   assertAdmin(req);
   const { fullName, username, role, email, password, active = true } = input ?? {};
@@ -273,6 +284,9 @@ async function createUser(input, req) {
   if (error) throw httpError(400, error.message, error);
   await must(req.supabaseAdmin.from("profiles").upsert({ id: data.user.id, full_name: fullName, username, active }));
   await must(req.supabaseAdmin.from("user_roles").upsert({ user_id: data.user.id, role }, { onConflict: "user_id,role" }));
+  if (role === "cashier") {
+    await upsertCashierLogin(req, { id: data.user.id, fullName, username, pin: password, active });
+  }
   return { id: data.user.id };
 }
 
@@ -285,6 +299,11 @@ async function updateUser(input, req) {
     await must(req.supabaseAdmin.from("user_roles").delete().eq("user_id", id));
     await must(req.supabaseAdmin.from("user_roles").insert({ user_id: id, role }));
     await req.supabaseAdmin.auth.admin.updateUserById(id, { user_metadata: { role, full_name: fullName, username } });
+    if (role === "cashier") {
+      await upsertCashierLogin(req, { id, fullName, username, active });
+    } else {
+      await must(req.supabaseAdmin.from("cashiers").delete().eq("profile_id", id));
+    }
   }
   return { ok: true };
 }
@@ -295,12 +314,27 @@ async function resetCredentials(input, req) {
   if (!id || !password) throw httpError(400, "id and password are required");
   const { error } = await req.supabaseAdmin.auth.admin.updateUserById(id, { password });
   if (error) throw httpError(400, error.message, error);
+  const [profile, roles] = await Promise.all([
+    maybe(req.supabaseAdmin.from("profiles").select("full_name, username, active").eq("id", id).maybeSingle()),
+    must(req.supabaseAdmin.from("user_roles").select("role").eq("user_id", id)),
+  ]);
+  if (profile && roles.some((r) => r.role === "cashier")) {
+    await upsertCashierLogin(req, {
+      id,
+      fullName: profile.full_name,
+      username: profile.username,
+      pin: password,
+      active: profile.active,
+    });
+  }
   return { ok: true };
 }
 
 async function setUserActive(input, req) {
   assertAdmin(req);
-  await must(req.supabaseAdmin.from("profiles").update({ active: Boolean(input?.active) }).eq("id", input?.id));
+  const active = Boolean(input?.active);
+  await must(req.supabaseAdmin.from("profiles").update({ active }).eq("id", input?.id));
+  await req.supabaseAdmin.from("cashiers").update({ active }).eq("profile_id", input?.id);
   return { ok: true };
 }
 

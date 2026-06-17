@@ -3,7 +3,6 @@
 import { createContext, useContext, useEffect, useState, useCallback, type ReactNode } from "react";
 import { useApiAction } from "@/lib/api-client";
 import { listCatalog } from "./catalog.functions";
-import { supabase } from "@/integrations/supabase/client";
 
 export type BCategory = { id: string; name_ar: string; name_en: string; sort_order: number; color: string | null; icon: string | null; active: boolean };
 export type BProduct = { id: string; category_id: string | null; name_ar: string; name_en: string; sku: string | null; price: number; image_url: string | null; tax_rate: number; active: boolean; product_type: string; calories: number | null; size: string | null };
@@ -52,15 +51,8 @@ export function CatalogProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     let cancelled = false;
-    const tryLoad = async () => {
-      const { data } = await supabase.auth.getSession();
-      if (!cancelled && data.session?.user) load();
-    };
-    tryLoad();
-    const { data: sub } = supabase.auth.onAuthStateChange((_e, session) => {
-      if (session?.user) load();
-    });
-    return () => { cancelled = true; sub.subscription.unsubscribe(); };
+    if (!cancelled) load();
+    return () => { cancelled = true; };
   }, [load]);
 
   const groupsForProduct = useCallback((productId: string) => {

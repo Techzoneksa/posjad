@@ -3,7 +3,6 @@
 import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from "react";
 import { useApiAction } from "@/lib/api-client";
 import { getRestaurantSettings } from "./settings.functions";
-import { supabase } from "@/integrations/supabase/client";
 
 export type RestaurantSettings = {
   id: boolean;
@@ -79,15 +78,8 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     let cancelled = false;
-    const init = async () => {
-      const { data } = await supabase.auth.getSession();
-      if (!cancelled && data.session?.user) load();
-    };
-    init();
-    const { data: sub } = supabase.auth.onAuthStateChange((_e, session) => {
-      if (session?.user) load();
-    });
-    return () => { cancelled = true; sub.subscription.unsubscribe(); };
+    if (!cancelled) load();
+    return () => { cancelled = true; };
   }, [load]);
 
   return (

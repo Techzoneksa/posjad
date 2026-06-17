@@ -1,4 +1,5 @@
 import type { NextRequest } from "next/server";
+import { readPosSession } from "@/lib/pos-session.server";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -112,6 +113,67 @@ async function authenticate(request: NextRequest, req: RpcRequest) {
   const { createUserSupabase, supabaseAdmin, supabaseAuth } = await loadSupabaseModule();
   const token = bearerFrom(request);
   if (!token) {
+    const posSession = readPosSession(request);
+    if (posSession) {
+      const { data: cashier, error: cashierError } = await supabaseAdmin
+        .from("cashiers")
+        .select("id, profile_id, username, full_name, active")
+        .eq("id", posSession.cashierId)
+        .eq("profile_id", posSession.profileId)
+        .maybeSingle();
+
+      if (cashierError) {
+        console.error("[rpc/auth] pos_session cashier lookup failed", {
+          cashierId: posSession.cashierId,
+          code: cashierError.code,
+          message: cashierError.message,
+        });
+        return json({
+          error: "unauthorized",
+          message: "Unauthorized: Invalid POS session",
+        }, 401);
+      }
+
+      if (!cashier?.active) {
+        return json({
+          error: "unauthorized",
+          message: "Unauthorized: Invalid POS session",
+        }, 401);
+      }
+
+      const profile = {
+        id: cashier.profile_id,
+        full_name: cashier.full_name || cashier.username,
+        username: cashier.username,
+        active: Boolean(cashier.active),
+        last_login: null,
+      };
+
+      req.authToken = null;
+      req.supabase = supabaseAdmin;
+      req.supabaseAdmin = supabaseAdmin;
+      req.auth = {
+        uid: cashier.profile_id,
+        user: {
+          id: cashier.profile_id,
+          email: null,
+          app_metadata: { role: "cashier" },
+          user_metadata: {
+            full_name: profile.full_name,
+            username: profile.username,
+            role: "cashier",
+          },
+        },
+        profile,
+        roles: ["cashier"],
+        isSuperAdmin: false,
+        isAdmin: false,
+        isFinance: false,
+        isCashier: true,
+      };
+      return null;
+    }
+
     return json({
       error: "unauthorized",
       message: "Unauthorized: No authorization header provided",

@@ -5,6 +5,8 @@ import { useMutation } from "@tanstack/react-query";
 
 import { supabase } from "@/integrations/supabase/client";
 
+export const POS_SESSION_STORAGE_KEY = "jaad_pos_session";
+
 export type ApiMethod = "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
 
 export type ApiAction<Input = any, Output = any> = {
@@ -18,6 +20,12 @@ export type ApiAction<Input = any, Output = any> = {
 export type ServerFnInput<T = any> = T extends undefined ? void | { data?: undefined } : { data: T } | T;
 
 export async function getAccessToken() {
+  if (
+    typeof window !== "undefined" &&
+    window.localStorage.getItem(POS_SESSION_STORAGE_KEY) === "1"
+  ) {
+    return null;
+  }
   const { data } = await supabase.auth.getSession();
   return data.session?.access_token ?? null;
 }
@@ -48,12 +56,12 @@ function unwrapServerFnInput<Input>(input?: ServerFnInput<Input>): Input | undef
 export async function apiFetch<Output = any, Input = any>(
   action: ApiAction<Input, Output> | string,
   input?: ServerFnInput<Input>,
-  options?: { accessToken?: string | null },
+  options?: { accessToken?: string | null; skipAccessToken?: boolean },
 ): Promise<Output> {
   const descriptor =
     typeof action === "string" ? createApiAction<Input, Output>(action) : action;
   const data = unwrapServerFnInput(input);
-  const token = options?.accessToken ?? await getAccessToken();
+  const token = options?.skipAccessToken ? null : (options?.accessToken ?? await getAccessToken());
   const headers: Record<string, string> = {
     Accept: "application/json",
   };

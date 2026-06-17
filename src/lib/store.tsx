@@ -4,7 +4,7 @@ import { createContext, useContext, useEffect, useState, type ReactNode } from "
 import { PRODUCTS, VAT_RATE, type Product, type Modifier } from "./data";
 import { supabase } from "@/integrations/supabase/client";
 import { getCurrentSessionUser, signOut as authSignOut } from "./authConfig";
-import { getAccessToken, useApiAction } from "@/lib/api-client";
+import { POS_SESSION_STORAGE_KEY, useApiAction } from "@/lib/api-client";
 import { openShift as openShiftFn, getOpenShift } from "./shifts.functions";
 import { createOrder as createOrderFn, holdOrder as holdOrderFn, listHeldOrders as listHeldOrdersFn, resumeHeldOrder as resumeHeldOrderFn, discardHeldOrder as discardHeldOrderFn, findOrCreateCustomerByPhone } from "./pos.functions";
 import { toast } from "sonner";
@@ -199,6 +199,8 @@ const Ctx = createContext<Ctx | null>(null);
 
 function uid() { return Math.random().toString(36).slice(2, 10); }
 
+function requiresLegacyAuthToken() { return false; }
+
 function isUnauthorizedError(error: unknown) {
   const message = error instanceof Error ? error.message : String(error ?? "");
   return message.toLowerCase().includes("unauthorized") || message.includes("401");
@@ -234,10 +236,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const refreshHeld = async (shiftId?: string) => {
     setHeldLoading(true);
     try {
-      if (!(await getAccessToken())) {
-        setHeld([]);
-        return;
-      }
       const rows: any[] = await listHeldCall();
       const activeShiftId = shiftId ?? shift.id;
       const mapped: HeldOrder[] = (rows || [])
@@ -262,7 +260,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     const hydrateShift = async (role: UserRole): Promise<boolean> => {
       try {
-        if (!(await getAccessToken())) return false;
         const s: any = await getOpenShiftCall();
         if (s) {
           setShift({ open: true, id: s.id, openedAt: new Date(s.opened_at).getTime(), openingCash: Number(s.opening_float) });
@@ -275,6 +272,12 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
     const { data: sub } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (!session?.user) {
+        if (
+          typeof window !== "undefined" &&
+          window.localStorage.getItem(POS_SESSION_STORAGE_KEY) === "1"
+        ) {
+          return;
+        }
         const hadUser = !!user;
         setUser(null);
         setShift({ open: false, openingCash: 0 });
@@ -356,14 +359,14 @@ export function AppProvider({ children }: { children: ReactNode }) {
         if (typeof window !== "undefined" && !window.confirm(msg)) return;
       }
       const dest: Screen = user ? (wasCashier ? "pos_login" : "dashboard_login") : "login_selector";
-      void authSignOut();
+      void authSignOut(wasCashier);
       setUser(null);
       setScreen(dest);
     },
     shift,
     openShift: async (cash) => {
       try {
-        if (!(await getAccessToken())) {
+        if (requiresLegacyAuthToken()) {
           setUser(null);
           setScreen("login_selector");
           toast.error(lang === "ar" ? "انتهت الجلسة، يرجى تسجيل الدخول مجددًا" : "Session expired, please sign in again");
@@ -391,7 +394,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       }
     },
 
-    closeShift: () => { setShift({ open: false, openingCash: 0 }); setScreen("pos_login"); setUser(null); },
+    closeShift: () => { void authSignOut(true); setShift({ open: false, openingCash: 0 }); setScreen("pos_login"); setUser(null); },
 
     screen, setScreen,
     orderType, setOrderType,
@@ -407,7 +410,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     holdOrder: async () => {
       if (!cart.length) return;
       try {
-        if (!(await getAccessToken())) {
+        if (requiresLegacyAuthToken()) {
           toast.error(lang === "ar" ? "انتهت الجلسة، يرجى تسجيل الدخول مجددًا" : "Session expired, please sign in again");
           setScreen("login_selector");
           return;
@@ -449,7 +452,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     completedOrders, lastOrder, setLastOrder, refundOrderId, setRefundOrderId,
     completeOrder: async (payment) => {
       if (!cart.length) return null;
-      if (!(await getAccessToken())) {
+      if (requiresLegacyAuthToken()) {
         toast.error(lang === "ar" ? "انتهت الجلسة، يرجى تسجيل الدخول مجددًا" : "Session expired, please sign in again");
         setScreen("login_selector");
         return null;
