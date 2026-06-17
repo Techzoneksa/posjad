@@ -89,6 +89,25 @@ async function ensureProfile(uid: string, user: any, profile: any, supabaseAdmin
   return data;
 }
 
+function profileFromAuthUser(uid: string, user: any) {
+  const emailPrefix = user.email?.split("@")[0] || `user_${uid.slice(0, 8)}`;
+  const username = user.user_metadata?.username || user.app_metadata?.username || emailPrefix;
+  const fullName =
+    user.user_metadata?.full_name ||
+    user.user_metadata?.name ||
+    user.app_metadata?.full_name ||
+    user.app_metadata?.name ||
+    username;
+
+  return {
+    id: uid,
+    full_name: fullName,
+    username,
+    active: true,
+    last_login: null,
+  };
+}
+
 async function authenticate(request: NextRequest, req: RpcRequest) {
   const { createUserSupabase, supabaseAdmin, supabaseAuth } = await loadSupabaseModule();
   const token = bearerFrom(request);
@@ -111,12 +130,36 @@ async function authenticate(request: NextRequest, req: RpcRequest) {
   const roleClaims = collectRoleClaims(data.user);
   const isSuperAdmin = roleClaims.some((role) => SUPER_ADMIN_ALIASES.has(role));
   const claimedAppRole = roleClaims.map(normalizeAppRole).find(Boolean);
-  const [{ data: profile }, { data: roles }] = await Promise.all([
+  const [{ data: profile, error: profileError }, { data: roles, error: rolesError }] = await Promise.all([
     supabaseAdmin.from("profiles").select("id, full_name, username, active, last_login").eq("id", uid).maybeSingle(),
     supabaseAdmin.from("user_roles").select("role").eq("user_id", uid),
   ]);
 
-  const normalizedProfile = await ensureProfile(uid, data.user, profile, supabaseAdmin);
+  if (profileError) {
+    console.error("[rpc/auth] profiles lookup failed", {
+      uid,
+      code: profileError.code,
+      message: profileError.message,
+    });
+  }
+  if (rolesError) {
+    console.error("[rpc/auth] user_roles lookup failed", {
+      uid,
+      code: rolesError.code,
+      message: rolesError.message,
+    });
+  }
+
+  let normalizedProfile = profile;
+  if (!normalizedProfile && !profileError) {
+    try {
+      normalizedProfile = await ensureProfile(uid, data.user, profile, supabaseAdmin);
+    } catch {
+      normalizedProfile = null;
+    }
+  }
+  normalizedProfile ??= profileFromAuthUser(uid, data.user);
+
   if (normalizedProfile?.active === false) {
     return json({
       error: "unauthorized",
@@ -124,11 +167,19 @@ async function authenticate(request: NextRequest, req: RpcRequest) {
     }, 401);
   }
 
-  const roleList = (roles ?? []).map((r: { role: string }) => r.role);
+  const roleList = rolesError ? [] : (roles ?? []).map((r: { role: string }) => r.role);
   if (claimedAppRole && (isSuperAdmin || roleList.length === 0) && !roleList.includes(claimedAppRole)) {
-    await supabaseAdmin
+    const { error: upsertRoleError } = await supabaseAdmin
       .from("user_roles")
       .upsert({ user_id: uid, role: claimedAppRole }, { onConflict: "user_id,role" });
+    if (upsertRoleError) {
+      console.error("[rpc/auth] user_roles upsert failed", {
+        uid,
+        role: claimedAppRole,
+        code: upsertRoleError.code,
+        message: upsertRoleError.message,
+      });
+    }
     roleList.push(claimedAppRole);
   }
 
@@ -189,6 +240,13 @@ async function handleRpc(request: NextRequest, context: RouteContext) {
     const result = await entry.handler(input, req);
     return json(result ?? null);
   } catch (error: any) {
+    console.error("[rpc] action failed", {
+      path: new URL(request.url).pathname,
+      method: request.method,
+      status: Number(error?.status) || 500,
+      message: error?.message ?? "Internal server error",
+      code: error?.code,
+    });
     const status = Number(error?.status) || 500;
     return json({
       error: status >= 500 ? "internal_server_error" : "request_failed",
